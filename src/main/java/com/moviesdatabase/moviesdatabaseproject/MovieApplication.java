@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,16 @@ class Movie {
   private Number vote;
   private String genre;
   private Number year;
+  private Stats stats; // New property
+
+  // Inner class for stats
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class Stats {
+    private List<Integer> rating;
+    private List<String> review;
+  }
 }
 
 interface MovieRepository extends MongoRepository<Movie, String> {
@@ -187,6 +198,80 @@ class MovieController {
       response.put("message", e.getMessage());
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+  }
+
+  // Endpoint to add review and rating for a movie
+  @PostMapping("/movies/{id}/review")
+  public ResponseEntity<Object> addReviewAndRating(@PathVariable("id") String id,
+      @RequestBody ReviewAndRating reviewAndRating) {
+    try {
+      // Retrieve the movie by ID
+      Movie movie = movieRepository.findBy_id(id);
+      if (movie != null) {
+        // Get the existing stats or create new stats if it's null
+        Movie.Stats stats = movie.getStats();
+        if (stats == null) {
+          stats = new Movie.Stats();
+          stats.setRating(new ArrayList<>());
+          stats.setReview(new ArrayList<>());
+        }
+
+        // Add review and rating
+        stats.getReview().add(reviewAndRating.getReview());
+        stats.getRating().add(reviewAndRating.getRating());
+
+        // Update movie with new stats
+        movie.setStats(stats);
+
+        // Calculate the average rating
+        double averageRating = calculateAverageRating(stats.getRating());
+        movie.setRating(averageRating);
+
+        // Update vote to the total number of reviews in stats
+        int totalVote = stats.getReview().size();
+        movie.setVote(totalVote);
+
+        movieRepository.save(movie);
+
+        // Construct the response object
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Review and rating added successfully");
+        response.put("updatedMovie", movie);
+        return ResponseEntity.ok(response);
+      } else {
+        // If movie not found, return not found response
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Movie not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+      }
+    } catch (Exception e) {
+      // If any exception occurs, return internal server error response
+      Map<String, String> response = new HashMap<>();
+      response.put("error", "Internal Server Error");
+      response.put("message", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+  }
+
+  // Method to calculate the average rating
+  private double calculateAverageRating(List<Integer> ratings) {
+    if (ratings.isEmpty()) {
+      return 0.0;
+    }
+    int totalRating = 0;
+    for (int rating : ratings) {
+      totalRating += rating;
+    }
+    return (double) totalRating / ratings.size();
+  }
+
+  // Inner class for review and rating
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class ReviewAndRating {
+    private String review;
+    private Integer rating;
   }
 }
 
