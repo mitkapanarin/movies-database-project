@@ -140,18 +140,29 @@ class MovieController {
 
   // Endpoint to update an existing movie
   @PutMapping("/movies/{id}")
-  public ResponseEntity<String> updateMovie(@PathVariable("id") String id, @RequestBody Movie updatedMovie) {
+  public ResponseEntity<Object> updateMovie(@PathVariable("id") String id, @RequestBody Movie updatedMovie) {
     try {
       Movie existingMovie = movieRepository.findBy_id(id);
       if (existingMovie != null) {
         updatedMovie.set_id(id); // Ensure the ID is set for the updated movie
         movieRepository.save(updatedMovie);
-        return new ResponseEntity<>("Movie updated successfully", HttpStatus.OK);
+        // Construct the response object with message and updated movie
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Movie updated successfully");
+        response.put("updatedMovie", updatedMovie);
+        return ResponseEntity.ok(response);
       } else {
-        return new ResponseEntity<>("Movie not found", HttpStatus.NOT_FOUND);
+        // If movie not found, return not found response
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Movie not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
       }
     } catch (Exception e) {
-      return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+      // If any exception occurs, return internal server error response
+      Map<String, String> response = new HashMap<>();
+      response.put("error", "Internal Server Error");
+      response.put("message", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
   }
 
