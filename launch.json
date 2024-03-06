@@ -1,0 +1,8 @@
+{
+    "type": "java",
+    "name": "Spring Boot App",
+    "request": "launch",
+    "mainClass": "full.package.path.to.MovieApplication",
+    "projectName": "your-project-name"
+  }
+  
