@@ -86,7 +86,7 @@ interface MovieRepository extends MongoRepository<Movie, String> {
 }
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = { "http://localhost:5173", "https://react-springboot-movies-app-frontend.vercel.app" })
 class MovieController {
 
   @Autowired
